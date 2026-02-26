@@ -19,8 +19,6 @@ body {
     font-family: var(--font-main);
     margin: 0;
     padding: 0;
-    
-    /* dvh = Dynamic Viewport Height (Mantiene la app ajustada en iOS) */
     height: 100dvh; 
     display: flex;
     flex-direction: column;
@@ -35,16 +33,32 @@ body {
     background: rgba(5, 5, 5, 0.95);
     backdrop-filter: blur(10px);
     z-index: 100;
-    /* Ajuste para el Notch (cámara) del iPhone */
     padding-top: env(safe-area-inset-top);
 }
 
+/* RESPONSIVE: Ajuste dinámico del Header para móviles */
 .dashboard-grid {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px 10px 20px;
+    padding: 10px 15px; 
     width: 100%;
+    gap: 10px;
+}
+
+.brand-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0; 
+}
+
+/* Permite que los botones bajen de línea si no caben junto al título */
+.brand-area > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap; 
 }
 
 .brand-area h1 {
@@ -55,11 +69,19 @@ body {
     background: linear-gradient(to right, #fff, var(--accent-purple));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    white-space: nowrap; 
+}
+
+/* Auto-reduce el título al Agendar para no chocar con el botón Cancelar */
+body.scheduling-mode #main-title {
+    font-size: 1.1rem;
+    white-space: normal;
 }
 
 .stats-container {
     display: flex;
-    gap: 15px;
+    gap: 12px;
+    flex-shrink: 0; /* Protege a Inversión/Basura de ser aplastados */
 }
 
 .stat-box {
@@ -69,14 +91,14 @@ body {
 }
 
 .stat-label {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     color: var(--text-dim);
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     font-weight: 700;
 }
 
 .stat-value {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums; 
 }
