@@ -4,14 +4,14 @@
     --text-main: #e0e0e0;     
     --text-dim: #8b8b8b;         
     
-    /* PALETA DE IDENTIDAD */
     --accent-purple: #9d4edd; 
-    --accent-purple-glow: rgba(157, 78, 221, 0.5);
     --accent-red: #ff3b30;    
     
     --grid-line: #1f1a24;
     --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
+* { box-sizing: border-box; }
 
 body {
     background-color: var(--bg-dark);
@@ -19,32 +19,32 @@ body {
     font-family: var(--font-main);
     margin: 0;
     padding: 0;
-    height: 100vh;
+    
+    /* dvh = Dynamic Viewport Height (Mantiene la app ajustada en iOS) */
+    height: 100dvh; 
     display: flex;
     flex-direction: column;
     overflow: hidden; 
 }
 
-/* HEADER - DASHBOARD */
 .app-header {
-    height: auto; /* Altura automática para acomodar datos */
-    min-height: 80px;
+    flex-shrink: 0;
     border-bottom: 1px solid var(--grid-line);
     display: flex;
     flex-direction: column;
     background: rgba(5, 5, 5, 0.95);
     backdrop-filter: blur(10px);
     z-index: 100;
-    padding-top: 10px;
+    /* Ajuste para el Notch (cámara) del iPhone */
+    padding-top: env(safe-area-inset-top);
 }
 
 .dashboard-grid {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px 10px 20px;
+    padding: 10px 20px 10px 20px;
     width: 100%;
-    box-sizing: border-box;
 }
 
 .brand-area h1 {
@@ -57,7 +57,6 @@ body {
     -webkit-text-fill-color: transparent;
 }
 
-/* CONTENEDOR DE ESTADÍSTICAS */
 .stats-container {
     display: flex;
     gap: 15px;
@@ -79,15 +78,13 @@ body {
 .stat-value {
     font-size: 0.9rem;
     font-weight: 600;
-    font-variant-numeric: tabular-nums; /* Números alineados */
+    font-variant-numeric: tabular-nums; 
 }
 
-/* Colores de Stats */
 .stat-box.invest .stat-value { color: var(--accent-purple); text-shadow: 0 0 10px rgba(157, 78, 221, 0.3); }
 .stat-box.waste .stat-value { color: var(--accent-red); }
 .stat-box.remaining .stat-value { color: #fff; }
 
-/* BARRA DE EFICIENCIA (Visualización 0-100%) */
 .efficiency-bar-container {
     width: 100%;
     height: 4px;
@@ -98,16 +95,7 @@ body {
 .efficiency-fill {
     height: 100%;
     background: var(--accent-purple);
-    width: 50%; /* JS lo calculará */
+    width: 50%; 
     transition: width 0.5s ease, background 0.5s ease;
     box-shadow: 0 0 10px var(--accent-purple);
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    background-color: var(--accent-red);
-    border-radius: 50%;
-    margin-left: 8px;
-    box-shadow: 0 0 8px var(--accent-red);
 }

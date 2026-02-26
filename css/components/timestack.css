@@ -1,42 +1,34 @@
-/* css/components/timestack.css */
-
 #time-stack-container {
-    position: relative; /* CLAVE: Para que los hijos absolutos se guíen por esto */
     flex-grow: 1;
     overflow-y: auto;
+    position: relative; 
     background: var(--bg-dark);
-    scroll-behavior: smooth;
-    scrollbar-width: none; 
     width: 100%;
-    /* Aseguramos que el JS pueda expandir la altura */
-    display: block; 
+    scrollbar-width: none; 
+    scroll-behavior: smooth;
 }
 
 #time-stack-container::-webkit-scrollbar { display: none; }
 
-/* MARCADORES DE HORA (La grilla de fondo) */
 .hour-marker {
-    position: absolute; /* CLAVE */
+    position: absolute;
     left: 0;
     width: 100%;
     border-top: 1px solid var(--grid-line);
-    color: #555;
+    color: #444;
     font-size: 0.7rem;
-    padding-left: 15px;
+    padding-left: 10px;
     height: 1px;
-    pointer-events: none;
-    z-index: 0;
-    box-sizing: border-box; /* Para que el padding no rompa el ancho */
+    z-index: 1;
 }
 
 .hour-marker span {
     position: relative;
     top: -10px;
-    background: var(--bg-dark); /* Tapa la línea para leer la hora */
+    background: var(--bg-dark);
     padding-right: 5px;
 }
 
-/* LÍNEA DE "AHORA" */
 .now-line {
     position: absolute;
     left: 0;
@@ -48,23 +40,18 @@
     box-shadow: 0 0 10px rgba(255, 59, 48, 0.6);
 }
 
-/* --- BLOQUES DE TIEMPO (Estilo Morado/Rojo) --- */
 .time-block {
-    position: absolute; /* CLAVE: Si esto falta, se rompe todo */
+    position: absolute; 
     border-radius: 6px;
     padding: 4px 10px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     overflow: hidden;
     color: white;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-    
-    /* Efecto Cascada */
     box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
     backdrop-filter: blur(5px);
     border: 1px solid rgba(255,255,255,0.15);
-    
-    /* Asegurar que el ancho se respete */
     box-sizing: border-box; 
 }
 
@@ -73,13 +60,11 @@
     opacity: 0.9;
 }
 
-/* Tipografía Interna */
 .block-content {
     display: flex;
     flex-direction: column;
     pointer-events: none; 
     line-height: 1.3;
-    height: 100%; /* Ocupar todo el alto del bloque */
 }
 
 .block-content strong {
@@ -95,11 +80,10 @@
     font-size: 0.75em;
 }
 
-/* Colores */
 .block-invest {
     background: linear-gradient(135deg, rgba(60, 9, 108, 0.9), rgba(157, 78, 221, 0.9));
     border-left: 3px solid #e0aaff;
-    box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3);
+    box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3); 
 }
 
 .block-waste {
@@ -107,10 +91,9 @@
     border-left: 3px solid #ff9f9a;
 }
 
-/* EL VACÍO (GAP) - Corrección de Posición */
 .time-gap {
-    position: absolute; /* CLAVE */
-    left: 60px; /* Indentación para no tapar la hora */
+    position: absolute; 
+    left: 60px; 
     right: 10px;
     background: repeating-linear-gradient(
         45deg,
@@ -133,11 +116,20 @@
 .time-gap:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.3);
-    z-index: 50; /* Traer al frente al hacer hover */
 }
 
 .time-gap span {
     color: rgba(255, 255, 255, 0.3);
     font-size: 1.5rem;
     font-weight: bold;
+}
+
+/* --- LA SOLUCIÓN AL RESPONSIVE DE SAFARI --- */
+.scroll-spacer {
+    position: absolute;
+    top: 2880px; /* Exactamente en el minuto 1440 */
+    width: 100%;
+    /* 150px extras de scroll vacio para que puedas subir el último evento al centro de la pantalla */
+    height: calc(150px + env(safe-area-inset-bottom)); 
+    pointer-events: none;
 }

@@ -7,40 +7,42 @@ export class TimeStack {
     }
 
     render(blocks) {
-        // 1. Limpieza
+        // 1. Limpiar contenedor
         this.container.innerHTML = ''; 
         
-        // 2. CRÍTICO: Establecer la altura real del scroll
-        // Esto fuerza al navegador a dibujar un área scrollable larga
-        this.container.style.height = `${1440 * this.pixelsPerMinute}px`;
-
-        // 3. Dibujar Grilla (Horas)
+        // 2. Dibujar Grilla (Horas y Espaciador de Safari)
         this.renderGrid();
         
         const safeBlocks = Array.isArray(blocks) ? blocks : [];
         let sorted = safeBlocks.sort((a, b) => a.start - b.start);
 
-        // 4. Dibujar Vacíos
+        // 3. Dibujar Vacíos
         this.renderGaps(sorted);
 
-        // 5. Dibujar Bloques (Con lógica de cascada para no solapar)
+        // 4. Dibujar Bloques (Cascada)
         sorted = this.calculateOverlaps(sorted);
         sorted.forEach(block => this.drawBlock(block));
 
-        // 6. Línea de Tiempo
+        // 5. Línea de Tiempo
         this.renderNowLine();
     }
 
     renderGrid() {
+        // Dibujar las 24 horas
         for (let i = 0; i < 24; i++) {
             const yPos = (i * 60) * this.pixelsPerMinute;
             const marker = document.createElement('div');
             marker.className = 'hour-marker';
-            // Posicionamiento explícito
             marker.style.top = `${yPos}px`;
             marker.innerHTML = `<span>${i.toString().padStart(2, '0')}:00</span>`;
             this.container.appendChild(marker);
         }
+
+        // --- SOLUCIÓN SAFARI: EL ESPACIADOR FANTASMA ---
+        // Esto crea un espacio físico debajo de las 23:59 para que puedas hacer scroll
+        const spacer = document.createElement('div');
+        spacer.className = 'scroll-spacer';
+        this.container.appendChild(spacer);
     }
 
     renderGaps(sortedBlocks) {
@@ -96,18 +98,15 @@ export class TimeStack {
         const div = document.createElement('div');
         div.className = 'time-block';
         
-        // Cálculos matemáticos de posición
         const top = block.start * this.pixelsPerMinute;
         const duration = block.end - block.start;
         const height = duration * this.pixelsPerMinute;
 
-        // Cascada
         const leftOffset = 60 + (block._level * 20); 
         const widthCalc = `calc(100% - ${leftOffset + 10}px)`;
 
-        // APLICAR ESTILOS INLINE (La clave del calendario)
         div.style.top = `${top}px`;
-        div.style.height = `${Math.max(height, 25)}px`; // Mínimo 25px para que se vea texto
+        div.style.height = `${Math.max(height, 25)}px`; 
         div.style.left = `${leftOffset}px`;
         div.style.width = widthCalc;
         div.style.zIndex = 10 + block._level;
