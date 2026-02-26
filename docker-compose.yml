@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  1440-os:
+    # Construir usando el Dockerfile del directorio actual
+    build: .
+    
+    # Nombre del contenedor para identificarlo fácil
+    container_name: 1440-os-app
+    
+    # Mapeo de puertos: 
+    # Entras por localhost:8081 -> Docker lo manda al 80 interno
+    ports:
+      - "8081:80"
+    
+    # VOLUMENES (La magia del desarrollo):
+    # Conecta tu carpeta actual (.) con la carpeta html de Nginx.
+    # Cualquier cambio que guardes en tu editor se ve reflejado al instante.
+    volumes:
+      - .:/usr/share/nginx/html
+    
+    # Reiniciar siempre si falla, menos si tú lo paras
+    restart: unless-stopped

@@ -1,0 +1,113 @@
+:root {
+    --bg-dark: #050505;
+    --bg-panel: #100b14;
+    --text-main: #e0e0e0;     
+    --text-dim: #8b8b8b;         
+    
+    /* PALETA DE IDENTIDAD */
+    --accent-purple: #9d4edd; 
+    --accent-purple-glow: rgba(157, 78, 221, 0.5);
+    --accent-red: #ff3b30;    
+    
+    --grid-line: #1f1a24;
+    --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-main);
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+}
+
+/* HEADER - DASHBOARD */
+.app-header {
+    height: auto; /* Altura automática para acomodar datos */
+    min-height: 80px;
+    border-bottom: 1px solid var(--grid-line);
+    display: flex;
+    flex-direction: column;
+    background: rgba(5, 5, 5, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    padding-top: 10px;
+}
+
+.dashboard-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px 10px 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.brand-area h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -1px;
+    background: linear-gradient(to right, #fff, var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* CONTENEDOR DE ESTADÍSTICAS */
+.stats-container {
+    display: flex;
+    gap: 15px;
+}
+
+.stat-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.stat-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums; /* Números alineados */
+}
+
+/* Colores de Stats */
+.stat-box.invest .stat-value { color: var(--accent-purple); text-shadow: 0 0 10px rgba(157, 78, 221, 0.3); }
+.stat-box.waste .stat-value { color: var(--accent-red); }
+.stat-box.remaining .stat-value { color: #fff; }
+
+/* BARRA DE EFICIENCIA (Visualización 0-100%) */
+.efficiency-bar-container {
+    width: 100%;
+    height: 4px;
+    background: #1a1520;
+    position: relative;
+}
+
+.efficiency-fill {
+    height: 100%;
+    background: var(--accent-purple);
+    width: 50%; /* JS lo calculará */
+    transition: width 0.5s ease, background 0.5s ease;
+    box-shadow: 0 0 10px var(--accent-purple);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent-red);
+    border-radius: 50%;
+    margin-left: 8px;
+    box-shadow: 0 0 8px var(--accent-red);
+}

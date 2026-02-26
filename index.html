@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>1440 OS</title>
+    
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components/timestack.css">
+    <link rel="stylesheet" href="css/components/hud.css">
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="dashboard-grid">
+            <div class="brand-area">
+                <h1>1440</h1>
+                <div class="date-navigator">
+                    <button id="prev-day" class="nav-btn">‹</button>
+                    <span id="current-date-display">HOY</span>
+                    <button id="next-day" class="nav-btn" disabled>›</button>
+                </div>
+            </div>
+            <div class="stats-container">
+                <div class="stat-box invest">
+                    <span class="stat-label">INVERSIÓN</span>
+                    <span class="stat-value" id="invest-time">0h 0m</span>
+                </div>
+                <div class="stat-box waste">
+                    <span class="stat-label">BASURA</span>
+                    <span class="stat-value" id="waste-time">0h 0m</span>
+                </div>
+                <div class="stat-box remaining">
+                    <span class="stat-label">RESTANTE</span>
+                    <span class="stat-value" id="remaining-mins">1440</span>
+                </div>
+            </div>
+        </div>
+        <div class="efficiency-bar-container">
+            <div id="efficiency-bar" class="efficiency-fill"></div>
+        </div>
+    </header>
+
+    <main id="time-stack-container">
+        </main>
+
+    <button id="ghost-trigger" class="fab-main">
+        <span>+</span>
+    </button>
+
+    <div id="audit-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Auditoría de Tiempo</h3>
+                
+                <div id="duration-control" class="duration-control hidden">
+                    <div class="duration-display">
+                        <span>Duración:</span>
+                        <strong id="duration-value">30 min</strong>
+                    </div>
+                    <input type="range" id="duration-slider" min="1" max="60" value="30" class="tech-slider">
+                    <p class="helper-text">Desliza para ajustar el tiempo real.</p>
+                </div>
+
+                <p id="modal-subtitle">¿Qué actividad realizaste?</p>
+            </div>
+            
+            <label class="section-label invest-label">CONSTRUIR SISTEMA</label>
+            <div class="activity-grid">
+                <button data-type="DEEP_WORK" class="opt-btn invest">
+                    <span class="emoji">🧠</span> Trabajo Profundo
+                </button>
+                <button data-type="MEETING" class="opt-btn invest">
+                    <span class="emoji">🤝</span> Negocios / $
+                </button>
+                <button data-type="LEARNING" class="opt-btn invest">
+                    <span class="emoji">📚</span> Estudio
+                </button>
+                <button data-type="LIFE" class="opt-btn invest">
+                    <span class="emoji">🏋️</span> Salud / Vida
+                </button>
+            </div>
+
+            <label class="section-label waste-label">ENTROPÍA</label>
+            <div class="activity-grid waste-grid">
+                <button data-type="WASTE" class="opt-btn waste">
+                    <span class="emoji">📱</span> Redes Sociales
+                </button>
+                <button data-type="WASTE" class="opt-btn waste">
+                    <span class="emoji">🎮</span> Procrastinación
+                </button>
+            </div>
+
+            <button id="close-modal" class="text-btn">Cancelar</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
