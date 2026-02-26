@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>1440 OS</title>
-    
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components/timestack.css">
     <link rel="stylesheet" href="css/components/hud.css">
@@ -14,7 +13,18 @@
     <header class="app-header">
         <div class="dashboard-grid">
             <div class="brand-area">
-                <h1>1440</h1>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                    <h1 id="main-title">1440</h1>
+                    <button id="open-inbox-btn" class="inbox-trigger">
+                        📥 <span id="inbox-badge">0</span>
+                    </button>
+                    <button id="open-review-btn" class="inbox-trigger" style="border-color: var(--accent-purple);">
+                        🗓️
+                    </button>
+                    <button id="cancel-schedule-btn" class="inbox-trigger hidden" style="background: var(--accent-red);">
+                        Cancelar
+                    </button>
+                </div>
                 <div class="date-navigator">
                     <button id="prev-day" class="nav-btn">‹</button>
                     <span id="current-date-display">HOY</span>
@@ -41,8 +51,7 @@
         </div>
     </header>
 
-    <main id="time-stack-container">
-        </main>
+    <main id="time-stack-container"></main>
 
     <button id="ghost-trigger" class="fab-main">
         <span>+</span>
@@ -52,46 +61,93 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Auditoría de Tiempo</h3>
-                
                 <div id="duration-control" class="duration-control hidden">
                     <div class="duration-display">
                         <span>Duración:</span>
                         <strong id="duration-value">30 min</strong>
                     </div>
                     <input type="range" id="duration-slider" min="1" max="60" value="30" class="tech-slider">
-                    <p class="helper-text">Desliza para ajustar el tiempo real.</p>
                 </div>
-
                 <p id="modal-subtitle">¿Qué actividad realizaste?</p>
             </div>
-            
             <label class="section-label invest-label">CONSTRUIR SISTEMA</label>
             <div class="activity-grid">
-                <button data-type="DEEP_WORK" class="opt-btn invest">
-                    <span class="emoji">🧠</span> Trabajo Profundo
-                </button>
-                <button data-type="MEETING" class="opt-btn invest">
-                    <span class="emoji">🤝</span> Negocios / $
-                </button>
-                <button data-type="LEARNING" class="opt-btn invest">
-                    <span class="emoji">📚</span> Estudio
-                </button>
-                <button data-type="LIFE" class="opt-btn invest">
-                    <span class="emoji">🏋️</span> Salud / Vida
-                </button>
+                <button data-type="DEEP_WORK" class="opt-btn invest">🧠 Trabajo Profundo</button>
+                <button data-type="MEETING" class="opt-btn invest">🤝 Negocios / $</button>
+                <button data-type="LEARNING" class="opt-btn invest">📚 Estudio</button>
+                <button data-type="LIFE" class="opt-btn invest">🏋️ Salud / Vida</button>
             </div>
-
             <label class="section-label waste-label">ENTROPÍA</label>
             <div class="activity-grid waste-grid">
-                <button data-type="WASTE" class="opt-btn waste">
-                    <span class="emoji">📱</span> Redes Sociales
-                </button>
-                <button data-type="WASTE" class="opt-btn waste">
-                    <span class="emoji">🎮</span> Procrastinación
-                </button>
+                <button data-type="WASTE" class="opt-btn waste">📱 Redes Sociales</button>
+                <button data-type="WASTE" class="opt-btn waste">🎮 Procrastinación</button>
+            </div>
+            <button id="close-modal" class="text-btn">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="judge-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>El Juez</h3>
+                <p id="judge-activity-name" style="color: white; font-weight: bold; font-size: 1.1rem; margin: 10px 0;"></p>
+                <p style="color: var(--text-dim); font-size: 0.85rem;">¿Qué harás con esto para mejorar tu sistema?</p>
+            </div>
+            <div class="judge-grid" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <button data-decision="delete" class="judge-btn">🗑️ ELIMINAR (No aporta valor)</button>
+                <button data-decision="delegate" class="judge-btn">🤝 DELEGAR (Otro puede hacerlo)</button>
+                <button data-decision="automate" class="judge-btn">⚙️ SISTEMATIZAR (Crear regla)</button>
+            </div>
+            <hr style="border-color: #3c2a4d; margin: 20px 0;">
+            <button id="judge-remove-error" class="text-btn" style="color: var(--accent-red);">Borrar (Me equivoqué al anotar)</button>
+            <button id="close-judge" class="text-btn">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="inbox-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 80dvh;">
+            <div class="modal-header">
+                <h3>Inbox Temporal</h3>
+                <p style="color: var(--text-dim); font-size: 0.85rem;">Si no está en el calendario, no existe.</p>
+            </div>
+            <div class="inbox-input-group">
+                <input type="text" id="inbox-input" placeholder="Nueva tarea o idea..." autocomplete="off">
+                <button id="add-inbox-btn">+</button>
+            </div>
+            <ul id="inbox-list" class="inbox-list"></ul>
+            <button id="close-inbox" class="text-btn">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="review-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 90dvh;">
+            <div class="modal-header">
+                <h3>El Ritual del Domingo</h3>
+                <p style="color: var(--text-dim); font-size: 0.85rem;">"Caes al nivel de tus sistemas"</p>
+            </div>
+            
+            <div class="review-stats">
+                <div class="review-stat-box invest-box">
+                    <span>INVERSIÓN TOTAL</span>
+                    <strong id="review-invest-total">0h 0m</strong>
+                </div>
+                <div class="review-stat-box waste-box">
+                    <span>ENTROPÍA TOTAL</span>
+                    <strong id="review-waste-total">0h 0m</strong>
+                </div>
             </div>
 
-            <button id="close-modal" class="text-btn">Cancelar</button>
+            <label class="section-label" style="margin-top: 20px;">TUS REGLAS DEL SISTEMA</label>
+            <p style="font-size: 0.75rem; color: #888; margin-bottom: 10px;">Esta semana prometiste modificar estos comportamientos:</p>
+            <ul id="review-rules-list" class="inbox-list" style="max-height: 200px; margin-bottom: 20px;">
+                </ul>
+
+            <button id="plan-next-week-btn" class="opt-btn invest" style="width: 100%; font-size: 1rem; padding: 20px; background: var(--accent-purple); color: white; border: none;">
+                Limpiar Semana y Planificar
+            </button>
+            <p style="font-size: 0.7rem; color: #666; text-align: center; margin-top: 10px;">Esto borrará el registro de la semana pasada para empezar de cero con las "Rocas Grandes".</p>
+
+            <button id="close-review" class="text-btn">Cerrar</button>
         </div>
     </div>
 

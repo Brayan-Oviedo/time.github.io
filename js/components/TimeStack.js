@@ -7,28 +7,21 @@ export class TimeStack {
     }
 
     render(blocks) {
-        // 1. Limpiar contenedor
         this.container.innerHTML = ''; 
-        
-        // 2. Dibujar Grilla (Horas y Espaciador de Safari)
         this.renderGrid();
         
         const safeBlocks = Array.isArray(blocks) ? blocks : [];
         let sorted = safeBlocks.sort((a, b) => a.start - b.start);
 
-        // 3. Dibujar Vacíos
         this.renderGaps(sorted);
 
-        // 4. Dibujar Bloques (Cascada)
         sorted = this.calculateOverlaps(sorted);
         sorted.forEach(block => this.drawBlock(block));
 
-        // 5. Línea de Tiempo
         this.renderNowLine();
     }
 
     renderGrid() {
-        // Dibujar las 24 horas
         for (let i = 0; i < 24; i++) {
             const yPos = (i * 60) * this.pixelsPerMinute;
             const marker = document.createElement('div');
@@ -38,8 +31,6 @@ export class TimeStack {
             this.container.appendChild(marker);
         }
 
-        // --- SOLUCIÓN SAFARI: EL ESPACIADOR FANTASMA ---
-        // Esto crea un espacio físico debajo de las 23:59 para que puedas hacer scroll
         const spacer = document.createElement('div');
         spacer.className = 'scroll-spacer';
         this.container.appendChild(spacer);
@@ -116,7 +107,21 @@ export class TimeStack {
         if(block.type === 'WASTE') div.classList.add('block-waste');
         else div.classList.add('block-invest');
 
+        // --- LÓGICA DEL SELLO DEL JUEZ (ACTUALIZADA) ---
+        let badgeHtml = '';
+        if (block.decision === 'delete') {
+            badgeHtml = `<span style="position:absolute; top:2px; right:5px; font-size:0.9rem;">🗑️</span>`;
+        } else if (block.decision === 'delegate') {
+            badgeHtml = `<span style="position:absolute; top:2px; right:5px; font-size:0.9rem;">🤝</span>`;
+        } else if (block.decision === 'automate') {
+            badgeHtml = `<span style="position:absolute; top:2px; right:5px; font-size:0.9rem;">⚙️</span>`;
+        } else {
+            // Un emoji de advertencia con un fondo oscuro sutil para que contraste, y la animación de latido
+            badgeHtml = `<span style="position:absolute; top:4px; right:4px; font-size:0.75rem; background: rgba(0,0,0,0.5); border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; animation: pulse-gap 2s infinite;">⚠️</span>`;
+        }
+
         div.innerHTML = `
+            ${badgeHtml}
             <div class="block-content">
                 <strong>${block.label}</strong>
                 <small>${duration} min</small>
