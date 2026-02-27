@@ -1,8 +1,7 @@
-import { LocalDB } from './store/localDb.js';
+import { LocalDB } from './store/localDb.js?v=rutina-final2';
 import { TimeStack } from './components/TimeStack.js';
 import { TimeUtils } from './utils/timeUtils.js';
 
-// DOM
 const auditModal = document.getElementById('audit-modal');
 const judgeModal = document.getElementById('judge-modal');
 const inboxModal = document.getElementById('inbox-modal');
@@ -24,7 +23,6 @@ let schedulingItem = null;
 let currentViewDate = new Date(); 
 let timerInterval = null;
 
-// --- ESTADO PARA DRAG & DROP ---
 let drag = { el: null, id: null, startY: 0, originalStart: 0, isDragging: false };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,7 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
 function refreshView(stack) {
     const state = LocalDB.load();
     const viewDateKey = TimeUtils.getDateKey(currentViewDate);
-    const filteredBlocks = (state.blocks || []).filter(block => block.dateKey === viewDateKey);
+    const todayKey = TimeUtils.getDateKey(new Date());
+    
+    let filteredBlocks = (state.blocks || []).filter(block => block.dateKey === viewDateKey);
+    
+    // BLOQUEO AL PASADO: Solo inyecta rutinas si el día actual es HOY o en el FUTURO.
+    if (viewDateKey >= todayKey && filteredBlocks.length === 0 && state.routines && state.routines.length > 0) {
+        if (LocalDB.applyRoutines(viewDateKey)) {
+            const newState = LocalDB.load();
+            filteredBlocks = (newState.blocks || []).filter(block => block.dateKey === viewDateKey);
+        }
+    }
+
     stack.render(filteredBlocks);
     updateDashboard(filteredBlocks);
 }
@@ -70,11 +79,10 @@ function updateDashboard(blocks) {
 function updateDateUI() {
     if (TimeUtils.isToday(currentViewDate)) {
         document.getElementById('current-date-display').innerText = "HOY";
-        document.getElementById('next-day').disabled = true;
     } else {
         document.getElementById('current-date-display').innerText = TimeUtils.getDisplayDate(currentViewDate);
-        document.getElementById('next-day').disabled = false;
     }
+    document.getElementById('next-day').disabled = false;
 }
 
 function updateRemainingTime() {
@@ -162,6 +170,7 @@ function renderReviewModal() {
             if (rule.decision === 'delete') decisionText = '🗑️ ELIMINAR';
             if (rule.decision === 'delegate') decisionText = '🤝 DELEGAR';
             if (rule.decision === 'automate') decisionText = '⚙️ SISTEMATIZAR';
+            if (rule.decision === 'routine') decisionText = '🔄 RUTINA DIARIA'; 
             
             li.innerHTML = `<span class="rule-decision">${decisionText}</span><span>${rule.label}</span>`;
             rulesList.appendChild(li);
@@ -189,7 +198,7 @@ function setupInteractions(stack) {
     document.getElementById('close-review').addEventListener('click', () => reviewModal.classList.add('hidden'));
     
     document.getElementById('plan-next-week-btn').addEventListener('click', () => {
-        if(confirm('¿Estás seguro? Esto borrará tus bloques de tiempo para empezar una nueva semana de cero. Tus reglas de sistema se mantendrán.')) {
+        if(confirm('¿Estás seguro? Esto borrará tus bloques de tiempo para empezar una nueva semana de cero. Tus reglas y rutinas se mantendrán.')) {
             const state = LocalDB.load();
             state.blocks = []; 
             LocalDB.save(state);
@@ -240,7 +249,6 @@ function setupInteractions(stack) {
 
     durationSlider.addEventListener('input', (e) => { durationValue.innerText = `${e.target.value} min`; });
 
-    // --- DRAG & DROP ENGINE ---
     function getEventY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
 
     stackContainer.addEventListener('mousedown', handleDragStart);
@@ -271,7 +279,6 @@ function setupInteractions(stack) {
         const currentY = getEventY(e);
         const diff = currentY - drag.startY;
         
-        // Sensibilidad: Si mueve el dedo más de 10px, es un arrastre (Drag)
         if (Math.abs(diff) > 10) { 
             drag.isDragging = true;
             drag.el.style.transform = `translateY(${diff}px)`;
@@ -285,12 +292,11 @@ function setupInteractions(stack) {
         if (!drag.el) return;
         
         if (drag.isDragging) {
-            // Terminó de arrastrar: Guardar nueva hora
             const currentY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
             const diff = currentY - drag.startY;
             
             const minDiff = Math.floor(diff / 2); 
-            const snappedDiff = Math.round(minDiff / 15) * 15; // Redondear a 15 min
+            const snappedDiff = Math.round(minDiff / 15) * 15; 
             
             const state = LocalDB.load();
             const b = state.blocks.find(x => x.id === drag.id);
@@ -307,35 +313,44 @@ function setupInteractions(stack) {
             }
             refreshView(stackComponent);
         } else {
-            // NO hubo arrastre, fue un CLICK normal -> Abrir El Juez
             if(!schedulingItem) {
                 tempJudgeBlockId = drag.id;
                 const blockData = LocalDB.load().blocks.find(b => b.id === tempJudgeBlockId);
                 if(blockData) {
                     document.getElementById('judge-activity-name').innerText = blockData.label;
+                    
+                    const normalDeleteBtn = document.getElementById('normal-delete-btn');
+                    const makeRoutineBtn = document.getElementById('make-routine-btn');
+                    const removeRoutineBtn = document.getElementById('remove-routine-btn');
+                    
+                    if (blockData.decision === 'routine') {
+                        if(normalDeleteBtn) normalDeleteBtn.style.display = 'none';
+                        if(makeRoutineBtn) makeRoutineBtn.style.display = 'none';
+                        if(removeRoutineBtn) removeRoutineBtn.style.display = 'block';
+                    } else {
+                        if(normalDeleteBtn) normalDeleteBtn.style.display = 'block';
+                        if(makeRoutineBtn) makeRoutineBtn.style.display = 'block';
+                        if(removeRoutineBtn) removeRoutineBtn.style.display = 'none';
+                    }
+
                     judgeModal.classList.remove('hidden');
                 }
             }
         }
         
-        // Reset variables visuales
         drag.el.style.transform = '';
         drag.el.style.zIndex = '';
         drag.el.style.boxShadow = '';
         drag = { el: null, id: null, startY: 0, originalStart: 0, isDragging: false };
     }
 
-    // --- CLICK EN HUECO GRIS (TAP-TO-TIME) ---
     stackContainer.addEventListener('click', (e) => {
         const gapElement = e.target.closest('.time-gap');
         if (gapElement && !drag.isDragging) {
-            
-            // Detección de pixel exacto
             const rect = stackContainer.getBoundingClientRect();
             const clickY = e.clientY - rect.top + stackContainer.scrollTop;
             let clickedMin = Math.floor(clickY / 2); 
             
-            // Redondear a 15 mins (Ej. 14:15, 14:30)
             clickedMin = Math.round(clickedMin / 15) * 15;
             
             const gapStart = Number(gapElement.dataset.start);
@@ -369,13 +384,32 @@ function setupInteractions(stack) {
     document.querySelectorAll('.judge-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (tempJudgeBlockId) {
+                const decision = e.currentTarget.dataset.decision;
                 const state = LocalDB.load();
                 const block = state.blocks.find(b => b.id === tempJudgeBlockId);
                 
-                if(block) {
-                    LocalDB.updateBlockDecision(tempJudgeBlockId, e.currentTarget.dataset.decision);
-                    LocalDB.addSystemRule(block.label, e.currentTarget.dataset.decision);
-                    alert('Regla guardada para tu Revisión Semanal.');
+                if (block && decision) {
+                    if (e.currentTarget.id === 'make-routine-btn') {
+                        LocalDB.addRoutine(block);
+                        LocalDB.updateBlockDecision(tempJudgeBlockId, 'routine');
+                        LocalDB.addSystemRule(block.label, 'routine');
+                        alert(`✅ "${block.label}" es ahora una Roca Grande. Se agendará automáticamente en el futuro.`);
+                    } else if (e.currentTarget.id === 'remove-routine-btn') {
+                        
+                        // MAGIA: Borra la rutina del futuro y devuelve el bloque a ⚠️
+                        LocalDB.removeRoutine(block);
+                        LocalDB.removeSystemRule(block.label);
+                        LocalDB.updateBlockDecision(tempJudgeBlockId, null); 
+                        
+                        alert(`🛑 Rutina eliminada para el futuro. El bloque actual vuelve a estar sin juzgar.`);
+                    } else {
+                        if (decision === 'delete' || decision === 'delegate' || decision === 'automate') {
+                            LocalDB.removeRoutine(block); 
+                        }
+                        LocalDB.updateBlockDecision(tempJudgeBlockId, decision);
+                        LocalDB.addSystemRule(block.label, decision);
+                        alert('Regla guardada para tu Revisión Semanal.');
+                    }
                 }
                 
                 refreshView(stack);
@@ -388,6 +422,10 @@ function setupInteractions(stack) {
     document.getElementById('judge-remove-error').addEventListener('click', () => {
         if (confirm('¿Borrar registro permanentemente?')) {
             const state = LocalDB.load();
+            const block = state.blocks.find(b => b.id === tempJudgeBlockId);
+            if (block) {
+                LocalDB.removeRoutine(block); 
+            }
             state.blocks = state.blocks.filter(b => b.id !== tempJudgeBlockId);
             LocalDB.save(state);
             refreshView(stack); 

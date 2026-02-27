@@ -107,7 +107,7 @@ export class TimeStack {
         if(block.type === 'WASTE') div.classList.add('block-waste');
         else div.classList.add('block-invest');
 
-        // --- LÓGICA DEL SELLO DEL JUEZ (ACTUALIZADA) ---
+        // --- SISTEMA DE EMOJIS CORREGIDO ---
         let badgeHtml = '';
         if (block.decision === 'delete') {
             badgeHtml = `<span style="position:absolute; top:2px; right:5px; font-size:0.9rem;">🗑️</span>`;
@@ -115,8 +115,11 @@ export class TimeStack {
             badgeHtml = `<span style="position:absolute; top:2px; right:5px; font-size:0.9rem;">🤝</span>`;
         } else if (block.decision === 'automate') {
             badgeHtml = `<span style="position:absolute; top:2px; right:5px; font-size:0.9rem;">⚙️</span>`;
+        } else if (block.decision === 'routine') {
+            // NUEVO: Ahora las Rocas Grandes tienen su propio icono
+            badgeHtml = `<span style="position:absolute; top:2px; right:5px; font-size:0.9rem;">🔄</span>`;
         } else {
-            // Un emoji de advertencia con un fondo oscuro sutil para que contraste, y la animación de latido
+            // Tarea sin auditar (El Juez te espera)
             badgeHtml = `<span style="position:absolute; top:4px; right:4px; font-size:0.75rem; background: rgba(0,0,0,0.5); border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; animation: pulse-gap 2s infinite;">⚠️</span>`;
         }
 

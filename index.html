@@ -28,7 +28,7 @@
                 <div class="date-navigator">
                     <button id="prev-day" class="nav-btn">‹</button>
                     <span id="current-date-display">HOY</span>
-                    <button id="next-day" class="nav-btn" disabled>›</button>
+                    <button id="next-day" class="nav-btn">›</button>
                 </div>
             </div>
             <div class="stats-container">
@@ -53,9 +53,7 @@
 
     <main id="time-stack-container"></main>
 
-    <button id="ghost-trigger" class="fab-main">
-        <span>+</span>
-    </button>
+    <button id="ghost-trigger" class="fab-main"><span>+</span></button>
 
     <div id="audit-modal" class="modal-overlay hidden">
         <div class="modal-content">
@@ -94,9 +92,12 @@
                 <p style="color: var(--text-dim); font-size: 0.85rem;">¿Qué harás con esto para mejorar tu sistema?</p>
             </div>
             <div class="judge-grid" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                <button data-decision="delete" class="judge-btn">🗑️ ELIMINAR (No aporta valor)</button>
+                <button id="normal-delete-btn" data-decision="delete" class="judge-btn">🗑️ ELIMINAR (No aporta valor)</button>
                 <button data-decision="delegate" class="judge-btn">🤝 DELEGAR (Otro puede hacerlo)</button>
-                <button data-decision="automate" class="judge-btn">⚙️ SISTEMATIZAR (Crear regla)</button>
+                <button data-decision="automate" class="judge-btn">⚙️ SISTEMATIZAR (Buscar software/regla)</button>
+                <button id="make-routine-btn" class="judge-btn" data-decision="routine" style="border-color: var(--accent-purple); background: rgba(157, 78, 221, 0.1);">🔄 CONVERTIR EN RUTINA DIARIA</button>
+                
+                <button id="remove-routine-btn" class="judge-btn" data-decision="remove-routine" style="display: none; border-color: var(--accent-red); background: rgba(255, 59, 48, 0.1); color: white;">🛑 ELIMINAR RUTINA (Dejar de repetir)</button>
             </div>
             <hr style="border-color: #3c2a4d; margin: 20px 0;">
             <button id="judge-remove-error" class="text-btn" style="color: var(--accent-red);">Borrar (Me equivoqué al anotar)</button>
@@ -151,6 +152,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js?v=rutina-final2"></script>
 </body>
 </html>
