@@ -23,7 +23,6 @@ let schedulingItem = null;
 let currentViewDate = new Date(); 
 let timerInterval = null;
 
-// VARIABLES DEL GUARDIÁN
 let pendingGuardianData = null;
 
 let drag = { el: null, id: null, startY: 0, originalStart: 0, isDragging: false };
@@ -180,7 +179,6 @@ function renderReviewModal() {
     }
 }
 
-// NUEVA FUNCIÓN: Procesa el guardado abstrayendo la lógica para que el Guardián pueda pausarla
 function processBlockSave(type, label, stackComponent) {
     if (tempGapStart !== null) {
         const duration = parseInt(durationSlider.value);
@@ -217,18 +215,30 @@ function setupInteractions(stack) {
     });
     document.getElementById('close-review').addEventListener('click', () => reviewModal.classList.add('hidden'));
     
+    // DOBLE TOQUE: LIMPIAR REGLAS Y DEVOLVER BLOQUES A ESTADO VIRGEN (⚠️)
     const resetBtn = document.getElementById('plan-next-week-btn');
     resetBtn.addEventListener('click', () => {
         if (resetBtn.dataset.ready === 'true') {
             const state = LocalDB.load();
-            state.blocks = []; 
+            
+            // 1. Recorremos todos los bloques históricos
+            state.blocks.forEach(b => {
+                // Si no es una Rutina (Roca Grande), le quitamos la decisión
+                // Esto hará que visualmente vuelva a tener el ⚠️
+                if (b.decision !== 'routine') {
+                    b.decision = null; 
+                }
+            });
+            
+            // 2. Borramos las promesas del muro
             state.rules = []; 
+            
             LocalDB.save(state);
             refreshView(stack);
             reviewModal.classList.add('hidden');
             
             resetBtn.dataset.ready = 'false';
-            resetBtn.innerText = 'Limpiar Semana y Planificar';
+            resetBtn.innerText = 'Limpiar Promesas de la Semana';
             resetBtn.style.background = 'var(--accent-purple)';
         } else {
             resetBtn.dataset.ready = 'true';
@@ -236,7 +246,7 @@ function setupInteractions(stack) {
             resetBtn.style.background = 'var(--accent-red)';
             setTimeout(() => {
                 resetBtn.dataset.ready = 'false';
-                resetBtn.innerText = 'Limpiar Semana y Planificar';
+                resetBtn.innerText = 'Limpiar Promesas de la Semana';
                 resetBtn.style.background = 'var(--accent-purple)';
             }, 3000);
         }
@@ -258,42 +268,35 @@ function setupInteractions(stack) {
         tempJudgeBlockId = null; 
     });
 
-    // LA MAGIA DEL GUARDIÁN OCURRE AQUÍ
     document.querySelector('#audit-modal .modal-content').addEventListener('click', (e) => {
         const btn = e.target.closest('.opt-btn');
         if (btn && btn.id !== 'plan-next-week-btn') {
             const type = btn.dataset.type;
             const label = schedulingItem ? schedulingItem.text : btn.innerText.trim();
             
-            // Verificación del Guardián
             const state = LocalDB.load();
             const brokenRule = state.rules.find(r => r.label.toLowerCase() === label.toLowerCase() && r.decision === 'delete');
             
             if (brokenRule) {
-                // Interceptamos el flujo
                 pendingGuardianData = { type: type, label: label, stack: stack };
                 document.getElementById('guardian-message').innerHTML = `Prometiste <strong>ELIMINAR "${label}"</strong> en tu última revisión.<br><br>¿De verdad vas a romper tu propia regla?`;
                 
                 auditModal.classList.add('hidden');
                 document.getElementById('guardian-modal').classList.remove('hidden');
-                return; // Detenemos la ejecución normal
+                return; 
             }
 
-            // Flujo normal si no hay infracción
             processBlockSave(type, label, stack);
         }
     });
 
-    // ACCIONES DEL GUARDIÁN
     document.getElementById('guardian-cancel-btn').addEventListener('click', () => {
-        // Fuiste fuerte. Vuelves al menú para elegir otra cosa o cancelar.
         document.getElementById('guardian-modal').classList.add('hidden');
         auditModal.classList.remove('hidden'); 
         pendingGuardianData = null;
     });
 
     document.getElementById('guardian-proceed-btn').addEventListener('click', () => {
-        // Recaíste. Se registra la actividad.
         document.getElementById('guardian-modal').classList.add('hidden');
         if (pendingGuardianData) {
             processBlockSave(pendingGuardianData.type, pendingGuardianData.label, pendingGuardianData.stack);
