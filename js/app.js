@@ -23,6 +23,9 @@ let schedulingItem = null;
 let currentViewDate = new Date(); 
 let timerInterval = null;
 
+// VARIABLES DEL GUARDIÁN
+let pendingGuardianData = null;
+
 let drag = { el: null, id: null, startY: 0, originalStart: 0, isDragging: false };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -177,6 +180,24 @@ function renderReviewModal() {
     }
 }
 
+// NUEVA FUNCIÓN: Procesa el guardado abstrayendo la lógica para que el Guardián pueda pausarla
+function processBlockSave(type, label, stackComponent) {
+    if (tempGapStart !== null) {
+        const duration = parseInt(durationSlider.value);
+        saveBlockWithDate(tempGapStart, tempGapStart + duration, type, label, stackComponent, currentViewDate);
+        tempGapStart = null;
+    } else {
+        finishLiveSession(type, label, stackComponent);
+    }
+    
+    if (schedulingItem) {
+        LocalDB.removeInboxItem(schedulingItem.id);
+        stopScheduling();
+        renderInbox();
+    }
+    auditModal.classList.add('hidden');
+}
+
 function setupInteractions(stack) {
     document.getElementById('prev-day').addEventListener('click', () => { currentViewDate.setDate(currentViewDate.getDate() - 1); updateDateUI(); refreshView(stack); });
     document.getElementById('next-day').addEventListener('click', () => { currentViewDate.setDate(currentViewDate.getDate() + 1); updateDateUI(); refreshView(stack); });
@@ -196,16 +217,12 @@ function setupInteractions(stack) {
     });
     document.getElementById('close-review').addEventListener('click', () => reviewModal.classList.add('hidden'));
     
-    // DOBLE TOQUE: LIMPIAR SEMANA Y REGLAS (PWA SAFE)
     const resetBtn = document.getElementById('plan-next-week-btn');
     resetBtn.addEventListener('click', () => {
         if (resetBtn.dataset.ready === 'true') {
             const state = LocalDB.load();
             state.blocks = []; 
-            
-            // MAGIA: Borra también las reglas pasadas
             state.rules = []; 
-            
             LocalDB.save(state);
             refreshView(stack);
             reviewModal.classList.add('hidden');
@@ -241,26 +258,46 @@ function setupInteractions(stack) {
         tempJudgeBlockId = null; 
     });
 
+    // LA MAGIA DEL GUARDIÁN OCURRE AQUÍ
     document.querySelector('#audit-modal .modal-content').addEventListener('click', (e) => {
         const btn = e.target.closest('.opt-btn');
         if (btn && btn.id !== 'plan-next-week-btn') {
             const type = btn.dataset.type;
             const label = schedulingItem ? schedulingItem.text : btn.innerText.trim();
             
-            if (tempGapStart !== null) {
-                const duration = parseInt(durationSlider.value);
-                saveBlockWithDate(tempGapStart, tempGapStart + duration, type, label, stack, currentViewDate);
-                tempGapStart = null;
-            } else {
-                finishLiveSession(type, label, stack);
-            }
+            // Verificación del Guardián
+            const state = LocalDB.load();
+            const brokenRule = state.rules.find(r => r.label.toLowerCase() === label.toLowerCase() && r.decision === 'delete');
             
-            if (schedulingItem) {
-                LocalDB.removeInboxItem(schedulingItem.id);
-                stopScheduling();
-                renderInbox();
+            if (brokenRule) {
+                // Interceptamos el flujo
+                pendingGuardianData = { type: type, label: label, stack: stack };
+                document.getElementById('guardian-message').innerHTML = `Prometiste <strong>ELIMINAR "${label}"</strong> en tu última revisión.<br><br>¿De verdad vas a romper tu propia regla?`;
+                
+                auditModal.classList.add('hidden');
+                document.getElementById('guardian-modal').classList.remove('hidden');
+                return; // Detenemos la ejecución normal
             }
-            auditModal.classList.add('hidden');
+
+            // Flujo normal si no hay infracción
+            processBlockSave(type, label, stack);
+        }
+    });
+
+    // ACCIONES DEL GUARDIÁN
+    document.getElementById('guardian-cancel-btn').addEventListener('click', () => {
+        // Fuiste fuerte. Vuelves al menú para elegir otra cosa o cancelar.
+        document.getElementById('guardian-modal').classList.add('hidden');
+        auditModal.classList.remove('hidden'); 
+        pendingGuardianData = null;
+    });
+
+    document.getElementById('guardian-proceed-btn').addEventListener('click', () => {
+        // Recaíste. Se registra la actividad.
+        document.getElementById('guardian-modal').classList.add('hidden');
+        if (pendingGuardianData) {
+            processBlockSave(pendingGuardianData.type, pendingGuardianData.label, pendingGuardianData.stack);
+            pendingGuardianData = null;
         }
     });
 
@@ -401,7 +438,6 @@ function setupInteractions(stack) {
         }
     });
 
-    // --- ACCIONES DEL JUEZ SIN ALERTS ---
     document.querySelectorAll('.judge-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (tempJudgeBlockId) {

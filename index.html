@@ -104,6 +104,7 @@
                 <button data-decision="delegate" class="judge-btn">🤝 DELEGAR (Otro puede hacerlo)</button>
                 <button data-decision="automate" class="judge-btn">⚙️ SISTEMATIZAR (Buscar software/regla)</button>
                 <button id="make-routine-btn" class="judge-btn" data-decision="routine" style="border-color: var(--accent-purple); background: rgba(157, 78, 221, 0.1);">🔄 CONVERTIR EN RUTINA DIARIA</button>
+                
                 <button id="remove-routine-btn" class="judge-btn" data-decision="remove-routine" style="display: none; border-color: var(--accent-red); background: rgba(255, 59, 48, 0.1); color: white;">🛑 ELIMINAR RUTINA (Dejar de repetir)</button>
             </div>
             <hr style="border-color: #3c2a4d; margin: 20px 0;">
@@ -159,6 +160,21 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=rules-fix"></script>
+    <div id="guardian-modal" class="modal-overlay hidden" style="z-index: 3000;">
+        <div class="modal-content" style="border-top: 2px solid var(--accent-red);">
+            <div class="modal-header">
+                <h3 style="color: var(--accent-red);">⚠️ ALERTA DE SISTEMA</h3>
+                <p id="guardian-message" style="color: white; font-size: 1.05rem; margin-top: 15px; line-height: 1.4;"></p>
+            </div>
+            <button id="guardian-cancel-btn" class="opt-btn invest" style="background: var(--accent-purple); color: white; border: none; padding: 18px; font-size: 1rem; margin-top: 10px;">
+                Ser fuerte y cancelar
+            </button>
+            <button id="guardian-proceed-btn" class="text-btn" style="color: var(--accent-red); margin-top: 15px;">
+                Romper promesa y registrar recaída
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js?v=guardian"></script>
 </body>
 </html>
