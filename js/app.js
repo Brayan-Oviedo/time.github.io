@@ -7,7 +7,7 @@ const judgeModal = document.getElementById('judge-modal');
 const inboxModal = document.getElementById('inbox-modal');
 const reviewModal = document.getElementById('review-modal');
 const vaultModal = document.getElementById('vault-modal'); 
-const configModal = document.getElementById('config-modal'); // NUEVO MODAL DE CONFIGURACIÓN
+const configModal = document.getElementById('config-modal');
 
 const fab = document.getElementById('ghost-trigger');
 const stackContainer = document.getElementById('time-stack-container'); 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const appState = LocalDB.load();
     const stack = new TimeStack('time-stack-container');
     
-    renderAuditActivities(); // INYECTAR TUS ACTIVIDADES AL ABRIR LA APP
+    renderAuditActivities();
     updateDateUI();
     refreshView(stack);
     renderInbox();
@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupInteractions(stack);
 });
 
-// FUNCIÓN PARA RENDERIZAR BOTONES DE AUDITORÍA
 function renderAuditActivities() {
     const state = LocalDB.load();
     const investGrid = document.getElementById('audit-invest-grid');
@@ -67,7 +66,6 @@ function renderAuditActivities() {
     });
 }
 
-// FUNCIÓN PARA RENDERIZAR EL PANEL DE CONFIGURACIÓN
 function renderConfigModal() {
     const state = LocalDB.load();
     const investList = document.getElementById('config-invest-list');
@@ -276,6 +274,52 @@ function processBlockSave(type, label, stackComponent) {
     auditModal.classList.add('hidden');
 }
 
+// === DOS RUTAS CLARAS PARA ABRIR LA AUDITORÍA ===
+
+// Ruta 1: Cuando tocas el Cronómetro (Timer en Vivo)
+function openAuditForTimer() {
+    tempGapStart = null; 
+    document.getElementById('modal-subtitle').innerText = "¿Qué actividad realizaste?";
+    document.getElementById('duration-control').classList.add('hidden');
+    
+    // MUESTRA el botón de descartar
+    const discardBtn = document.getElementById('discard-session-btn');
+    if(discardBtn) {
+        discardBtn.classList.remove('hidden');
+        // Resetea su estado de doble toque por si acaso
+        discardBtn.dataset.ready = 'false';
+        discardBtn.innerText = '🛑 Descartar temporizador';
+    }
+    
+    document.getElementById('close-modal').innerText = "Ocultar y seguir contando";
+    auditModal.classList.remove('hidden'); 
+}
+
+// Ruta 2: Cuando tocas el Calendario (Hueco a mano)
+function openAuditForGap(timeString, duration, maxAvailable) {
+    document.getElementById('modal-subtitle').innerText = schedulingItem 
+        ? `Agendando "${schedulingItem.text}" desde las ${timeString}` 
+        : `Ajusta la duración desde las ${timeString}:`;
+        
+    durationSlider.max = maxAvailable.toString(); 
+    durationSlider.value = duration.toString();
+    durationValue.innerText = `${duration} min`;
+    document.getElementById('duration-control').classList.remove('hidden');
+    
+    // OCULTA el botón de descartar para siempre en este modo
+    const discardBtn = document.getElementById('discard-session-btn');
+    if(discardBtn) {
+        discardBtn.classList.add('hidden');
+        // Resetea su estado interno para evitar fantasmas
+        discardBtn.dataset.ready = 'false';
+        discardBtn.innerText = '🛑 Descartar temporizador';
+    }
+    
+    document.getElementById('close-modal').innerText = "Cancelar";
+    auditModal.classList.remove('hidden');
+}
+
+
 function setupInteractions(stack) {
     document.getElementById('prev-day').addEventListener('click', () => { currentViewDate.setDate(currentViewDate.getDate() - 1); updateDateUI(); refreshView(stack); });
     document.getElementById('next-day').addEventListener('click', () => { currentViewDate.setDate(currentViewDate.getDate() + 1); updateDateUI(); refreshView(stack); });
@@ -301,7 +345,6 @@ function setupInteractions(stack) {
     });
     document.getElementById('close-vault').addEventListener('click', () => vaultModal.classList.add('hidden'));
 
-    // --- MAGIA: GESTIÓN DE CONFIGURACIÓN ---
     document.getElementById('open-config-btn').addEventListener('click', () => {
         renderConfigModal();
         configModal.classList.remove('hidden');
@@ -310,7 +353,7 @@ function setupInteractions(stack) {
 
     document.getElementById('close-config-btn').addEventListener('click', () => {
         configModal.classList.add('hidden');
-        renderAuditActivities(); // Recarga los botones nuevos en el panel
+        renderAuditActivities(); 
         auditModal.classList.remove('hidden');
     });
 
@@ -324,7 +367,6 @@ function setupInteractions(stack) {
         if(val.trim()) { LocalDB.addActivity('WASTE', val); document.getElementById('new-waste-input').value = ''; renderConfigModal(); }
     });
 
-    // EDITAR O BORRAR EN VIVO (SIN ALERTS)
     document.querySelectorAll('#config-invest-list, #config-waste-list').forEach(list => {
         list.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.edit-act-btn');
@@ -335,7 +377,6 @@ function setupInteractions(stack) {
                 const id = Number(editBtn.dataset.id);
                 const li = editBtn.closest('li');
                 const currentText = li.querySelector('span').innerText;
-                // Edición inline para no sacar de la app
                 li.innerHTML = `
                     <input type="text" class="inline-edit-input" value="${currentText}" style="width: 70%; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--accent-purple); border-radius: 5px; padding: 8px; outline: none;">
                     <button class="save-act-btn" data-id="${id}" style="background:none; border:none; font-size:1.2rem; padding: 0;">✅</button>
@@ -348,7 +389,6 @@ function setupInteractions(stack) {
                     renderConfigModal();
                 }
             } else if (delBtn) {
-                // Borrado con doble toque para evitar accidentes sin usar alerts nativos
                 if (delBtn.dataset.ready === 'true') {
                     LocalDB.removeActivity(Number(delBtn.dataset.id));
                     renderConfigModal();
@@ -396,15 +436,7 @@ function setupInteractions(stack) {
 
     fab.addEventListener('click', () => {
         if (LocalDB.load().currentSession) {
-            tempGapStart = null; 
-            document.getElementById('modal-subtitle').innerText = "¿Qué actividad realizaste?";
-            auditModal.classList.remove('hidden'); 
-            durationControl.classList.add('hidden');
-            
-            const discardBtn = document.getElementById('discard-session-btn');
-            if(discardBtn) discardBtn.classList.remove('hidden');
-            document.getElementById('close-modal').innerText = "Ocultar y seguir contando";
-
+            openAuditForTimer();
         } else {
             const now = Date.now(); LocalDB.startSession(now); activateTimerUI(now);
         }
@@ -439,8 +471,7 @@ function setupInteractions(stack) {
 
     document.querySelector('#audit-modal .modal-content').addEventListener('click', (e) => {
         const btn = e.target.closest('.opt-btn');
-        // SEGURO: Solo reacciona si el botón tiene un data-type (es una actividad inyectada)
-        if (btn && btn.dataset.type) {
+        if (btn && btn.dataset.type && btn.id !== 'close-config-btn' && btn.id !== 'plan-next-week-btn') {
             const type = btn.dataset.type;
             const label = schedulingItem ? schedulingItem.text : btn.innerText.trim();
             
@@ -643,22 +674,10 @@ function setupInteractions(stack) {
             if (duration === 1440) duration = 60; 
             if (duration < 1) duration = 1;
             
-            durationSlider.max = maxAvailable.toString(); 
-            durationSlider.value = duration.toString();
-            durationValue.innerText = `${duration} min`;
-            
             const timeString = TimeUtils.minutesToTime(tempGapStart);
             
-            document.getElementById('modal-subtitle').innerText = schedulingItem 
-                ? `Agendando "${schedulingItem.text}" desde las ${timeString}` 
-                : `Ajusta la duración desde las ${timeString}:`;
-                
-            const discardBtn = document.getElementById('discard-session-btn');
-            if(discardBtn) discardBtn.classList.add('hidden');
-            document.getElementById('close-modal').innerText = "Cancelar";
-
-            durationControl.classList.remove('hidden');
-            auditModal.classList.remove('hidden');
+            // LA CLAVE: Llamamos a la función que esconde explícitamente el botón
+            openAuditForGap(timeString, duration, maxAvailable);
         }
     });
 
