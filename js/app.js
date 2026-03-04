@@ -1,11 +1,12 @@
 import { LocalDB } from './store/localDb.js?v=rutina-final2';
-import { TimeStack } from './components/TimeStack.js';
+import { TimeStack } from './components/TimeStack.js?v=fisica-final';
 import { TimeUtils } from './utils/timeUtils.js';
 
 const auditModal = document.getElementById('audit-modal');
 const judgeModal = document.getElementById('judge-modal');
 const inboxModal = document.getElementById('inbox-modal');
 const reviewModal = document.getElementById('review-modal');
+const vaultModal = document.getElementById('vault-modal'); 
 
 const fab = document.getElementById('ghost-trigger');
 const stackContainer = document.getElementById('time-stack-container'); 
@@ -147,9 +148,11 @@ function renderInbox() {
 
 function renderReviewModal() {
     const state = LocalDB.load();
+    const viewDateKey = TimeUtils.getDateKey(currentViewDate);
+    let dailyBlocks = (state.blocks || []).filter(b => b.dateKey === viewDateKey);
+    
     let investTotal = 0; let wasteTotal = 0;
-
-    (state.blocks || []).forEach(b => {
+    dailyBlocks.forEach(b => {
         const duration = b.end - b.start;
         if(b.type === 'WASTE') wasteTotal += duration;
         else investTotal += duration;
@@ -177,6 +180,36 @@ function renderReviewModal() {
             rulesList.appendChild(li);
         });
     }
+}
+
+function renderVaultModal() {
+    const state = LocalDB.load();
+    let allTimeInvest = 0;
+    let allTimeWaste = 0;
+    const activeDays = new Set(); 
+
+    (state.blocks || []).forEach(b => {
+        const duration = b.end - b.start;
+        if (b.type === 'WASTE') {
+            allTimeWaste += duration;
+        } else {
+            allTimeInvest += duration;
+        }
+        activeDays.add(b.dateKey);
+    });
+
+    const totalMins = allTimeInvest + allTimeWaste;
+    const efficiency = totalMins > 0 ? Math.round((allTimeInvest / totalMins) * 100) : 0;
+
+    document.getElementById('vault-days-total').innerText = activeDays.size;
+    document.getElementById('vault-efficiency-total').innerText = `${efficiency}%`;
+    document.getElementById('vault-invest-total').innerText = `${Math.floor(allTimeInvest/60)}h ${allTimeInvest%60}m`;
+    document.getElementById('vault-waste-total').innerText = `${Math.floor(allTimeWaste/60)}h ${allTimeWaste%60}m`;
+    
+    const effElement = document.getElementById('vault-efficiency-total');
+    if (efficiency >= 70) effElement.style.color = '#00d084'; 
+    else if (efficiency >= 50) effElement.style.color = '#ffd60a'; 
+    else effElement.style.color = 'var(--accent-red)'; 
 }
 
 function processBlockSave(type, label, stackComponent) {
@@ -215,28 +248,25 @@ function setupInteractions(stack) {
     });
     document.getElementById('close-review').addEventListener('click', () => reviewModal.classList.add('hidden'));
     
-    // DOBLE TOQUE: LIMPIAR REGLAS Y DEVOLVER BLOQUES A ESTADO VIRGEN (⚠️)
+    document.getElementById('open-vault-btn').addEventListener('click', () => {
+        renderVaultModal();
+        vaultModal.classList.remove('hidden');
+    });
+    document.getElementById('close-vault').addEventListener('click', () => vaultModal.classList.add('hidden'));
+
     const resetBtn = document.getElementById('plan-next-week-btn');
     resetBtn.addEventListener('click', () => {
         if (resetBtn.dataset.ready === 'true') {
             const state = LocalDB.load();
-            
-            // 1. Recorremos todos los bloques históricos
             state.blocks.forEach(b => {
-                // Si no es una Rutina (Roca Grande), le quitamos la decisión
-                // Esto hará que visualmente vuelva a tener el ⚠️
                 if (b.decision !== 'routine') {
                     b.decision = null; 
                 }
             });
-            
-            // 2. Borramos las promesas del muro
             state.rules = []; 
-            
             LocalDB.save(state);
             refreshView(stack);
             reviewModal.classList.add('hidden');
-            
             resetBtn.dataset.ready = 'false';
             resetBtn.innerText = 'Limpiar Promesas de la Semana';
             resetBtn.style.background = 'var(--accent-purple)';
@@ -280,12 +310,10 @@ function setupInteractions(stack) {
             if (brokenRule) {
                 pendingGuardianData = { type: type, label: label, stack: stack };
                 document.getElementById('guardian-message').innerHTML = `Prometiste <strong>ELIMINAR "${label}"</strong> en tu última revisión.<br><br>¿De verdad vas a romper tu propia regla?`;
-                
                 auditModal.classList.add('hidden');
                 document.getElementById('guardian-modal').classList.remove('hidden');
                 return; 
             }
-
             processBlockSave(type, label, stack);
         }
     });
@@ -305,6 +333,21 @@ function setupInteractions(stack) {
     });
 
     durationSlider.addEventListener('input', (e) => { durationValue.innerText = `${e.target.value} min`; });
+
+    document.getElementById('judge-duration-slider').addEventListener('input', (e) => {
+        if (!tempJudgeBlockId) return;
+        const newDur = parseInt(e.target.value);
+        document.getElementById('judge-duration-value').innerText = `${newDur} min`;
+        
+        const state = LocalDB.load();
+        const b = state.blocks.find(x => x.id === tempJudgeBlockId);
+        if (b) {
+            b.end = b.start + newDur;
+            document.getElementById('judge-activity-time').innerText = `${TimeUtils.minutesToTime(b.start)} - ${TimeUtils.minutesToTime(b.end)}`;
+            LocalDB.save(state);
+            refreshView(stack); 
+        }
+    });
 
     function getEventY(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
 
@@ -357,15 +400,39 @@ function setupInteractions(stack) {
             
             const state = LocalDB.load();
             const b = state.blocks.find(x => x.id === drag.id);
+            
             if(b) {
                 const duration = b.end - b.start;
                 let newStart = drag.originalStart + snappedDiff;
+                let newEnd = newStart + duration;
                 
-                if(newStart < 0) newStart = 0;
-                if(newStart + duration > 1440) newStart = 1440 - duration;
+                if(newStart < 0) { newStart = 0; newEnd = duration; }
+                if(newEnd > 1440) { newEnd = 1440; newStart = 1440 - duration; }
                 
-                b.start = newStart;
-                b.end = newStart + duration;
+                const dailyBlocks = state.blocks.filter(x => x.dateKey === b.dateKey && x.id !== b.id);
+                
+                let hasCollision = false;
+                for (let other of dailyBlocks) {
+                    if (newStart < other.end && newEnd > other.start) {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+
+                if (hasCollision) {
+                    b.start = drag.originalStart;
+                    b.end = drag.originalStart + duration;
+                    
+                    const toast = document.getElementById('collision-toast');
+                    if(toast) {
+                        toast.style.opacity = '1';
+                        setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+                    }
+                } else {
+                    b.start = newStart;
+                    b.end = newEnd;
+                }
+                
                 LocalDB.save(state);
             }
             refreshView(stackComponent);
@@ -375,6 +442,23 @@ function setupInteractions(stack) {
                 const blockData = LocalDB.load().blocks.find(b => b.id === tempJudgeBlockId);
                 if(blockData) {
                     document.getElementById('judge-activity-name').innerText = blockData.label;
+                    document.getElementById('judge-activity-time').innerText = `${TimeUtils.minutesToTime(blockData.start)} - ${TimeUtils.minutesToTime(blockData.end)}`;
+                    
+                    const jSlider = document.getElementById('judge-duration-slider');
+                    const jVal = document.getElementById('judge-duration-value');
+                    const curDur = blockData.end - blockData.start;
+                    
+                    const stateObj = LocalDB.load();
+                    const dailyBlocks = stateObj.blocks.filter(b => b.dateKey === blockData.dateKey).sort((a,b) => a.start - b.start);
+                    const myIdx = dailyBlocks.findIndex(b => b.id === blockData.id);
+                    let limit = 1440 - blockData.start; 
+                    if (myIdx < dailyBlocks.length - 1) {
+                        limit = dailyBlocks[myIdx + 1].start - blockData.start; 
+                    }
+                    
+                    jSlider.max = limit.toString(); 
+                    jSlider.value = curDur.toString();
+                    jVal.innerText = `${curDur} min`;
                     
                     const normalDeleteBtn = document.getElementById('normal-delete-btn');
                     const makeRoutineBtn = document.getElementById('make-routine-btn');
@@ -408,26 +492,19 @@ function setupInteractions(stack) {
     stackContainer.addEventListener('click', (e) => {
         const gapElement = e.target.closest('.time-gap');
         if (gapElement && !drag.isDragging) {
-            const rect = stackContainer.getBoundingClientRect();
-            const clickY = e.clientY - rect.top + stackContainer.scrollTop;
-            let clickedMin = Math.floor(clickY / 2); 
-            
-            clickedMin = Math.round(clickedMin / 15) * 15;
-            
             const gapStart = Number(gapElement.dataset.start);
             const gapEnd = Number(gapElement.dataset.end);
             
-            if (clickedMin < gapStart) clickedMin = gapStart;
-            if (clickedMin >= gapEnd) clickedMin = gapStart; 
+            tempGapStart = gapStart;
             
-            tempGapStart = clickedMin;
+            let maxAvailable = gapEnd - gapStart; 
             
-            let maxAvailable = gapEnd - tempGapStart;
-            let duration = maxAvailable > 30 ? 30 : maxAvailable;
+            let duration = maxAvailable; 
+            if (duration === 1440) duration = 60; 
             if (duration < 1) duration = 1;
             
-            durationSlider.max = maxAvailable;
-            durationSlider.value = duration;
+            durationSlider.max = maxAvailable.toString(); 
+            durationSlider.value = duration.toString();
             durationValue.innerText = `${duration} min`;
             
             const timeString = TimeUtils.minutesToTime(tempGapStart);

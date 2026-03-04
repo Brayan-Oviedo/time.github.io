@@ -29,6 +29,9 @@
                     <button id="open-review-btn" class="inbox-trigger" style="border-color: var(--accent-purple);">
                         🗓️
                     </button>
+                    <button id="open-vault-btn" class="inbox-trigger" style="border-color: #00d084;">
+                        📊
+                    </button>
                     <button id="cancel-schedule-btn" class="inbox-trigger hidden" style="background: var(--accent-red);">
                         Cancelar
                     </button>
@@ -72,7 +75,7 @@
                         <span>Duración:</span>
                         <strong id="duration-value">30 min</strong>
                     </div>
-                    <input type="range" id="duration-slider" min="1" max="60" value="30" class="tech-slider">
+                    <input type="range" id="duration-slider" min="1" max="240" step="1" value="30" class="tech-slider">
                 </div>
                 <p id="modal-subtitle">¿Qué actividad realizaste?</p>
             </div>
@@ -95,16 +98,24 @@
     <div id="judge-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>El Juez</h3>
-                <p id="judge-activity-name" style="color: white; font-weight: bold; font-size: 1.1rem; margin: 10px 0;"></p>
-                <p style="color: var(--text-dim); font-size: 0.85rem;">¿Qué harás con esto para mejorar tu sistema?</p>
+                <h3 style="margin-bottom: 0;">El Juez</h3>
+                <p id="judge-activity-name" style="color: white; font-weight: bold; font-size: 1.3rem; margin: 20px 0 8px 0; letter-spacing: 0.5px;"></p>
+                <p id="judge-activity-time" style="color: var(--accent-purple); font-size: 1rem; margin: 0 0 25px 0; font-weight: 700; letter-spacing: 1px;"></p>
             </div>
-            <div class="judge-grid" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+            
+            <div class="duration-control" style="margin-bottom: 15px; padding: 10px 15px;">
+                <div class="duration-display" style="margin-bottom: 8px;">
+                    <span style="font-size: 0.8rem; color: #888;">Corregir duración:</span>
+                    <strong id="judge-duration-value" style="font-size: 1rem;">30 min</strong>
+                </div>
+                <input type="range" id="judge-duration-slider" min="1" max="240" step="1" value="30" class="tech-slider">
+            </div>
+
+            <div class="judge-grid" style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="normal-delete-btn" data-decision="delete" class="judge-btn">🗑️ ELIMINAR (No aporta valor)</button>
                 <button data-decision="delegate" class="judge-btn">🤝 DELEGAR (Otro puede hacerlo)</button>
                 <button data-decision="automate" class="judge-btn">⚙️ SISTEMATIZAR (Buscar software/regla)</button>
                 <button id="make-routine-btn" class="judge-btn" data-decision="routine" style="border-color: var(--accent-purple); background: rgba(157, 78, 221, 0.1);">🔄 CONVERTIR EN RUTINA DIARIA</button>
-                
                 <button id="remove-routine-btn" class="judge-btn" data-decision="remove-routine" style="display: none; border-color: var(--accent-red); background: rgba(255, 59, 48, 0.1); color: white;">🛑 ELIMINAR RUTINA (Dejar de repetir)</button>
             </div>
             <hr style="border-color: #3c2a4d; margin: 20px 0;">
@@ -175,6 +186,47 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=clean-slate"></script>
+    <div id="vault-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-height: 90dvh;">
+            <div class="modal-header">
+                <h3 style="color: #00d084;">La Bóveda</h3>
+                <p style="color: var(--text-dim); font-size: 0.85rem;">"La consistencia vence a la intensidad"</p>
+            </div>
+            
+            <div class="review-stats" style="margin-top: 15px;">
+                <div class="review-stat-box" style="border-color: rgba(0, 208, 132, 0.3);">
+                    <span>DÍAS REGISTRADOS</span>
+                    <strong id="vault-days-total" style="color: #00d084;">0</strong>
+                </div>
+                <div class="review-stat-box" style="border-color: rgba(255, 255, 255, 0.2);">
+                    <span>EFICIENCIA HISTÓRICA</span>
+                    <strong id="vault-efficiency-total" style="color: white;">0%</strong>
+                </div>
+            </div>
+
+            <div class="review-stats" style="margin-top: 15px;">
+                <div class="review-stat-box invest-box">
+                    <span>INVERSIÓN HISTÓRICA</span>
+                    <strong id="vault-invest-total">0h</strong>
+                </div>
+                <div class="review-stat-box waste-box">
+                    <span>BASURA HISTÓRICA</span>
+                    <strong id="vault-waste-total">0h</strong>
+                </div>
+            </div>
+            
+            <p style="font-size: 0.75rem; color: #888; text-align: center; margin-top: 20px; line-height: 1.4;">
+                Cada minuto de Inversión suma a tu interés compuesto. Mantén la eficiencia histórica por encima del 70% para garantizar tu éxito.
+            </p>
+
+            <button id="close-vault" class="text-btn" style="margin-top: 10px;">Cerrar Bóveda</button>
+        </div>
+    </div>
+
+    <div id="collision-toast" style="position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-red); color: white; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; font-weight: bold; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        ⚠️ El espacio ya está ocupado
+    </div>
+
+    <script type="module" src="js/app.js?v=ui-spacing"></script>
 </body>
 </html>
