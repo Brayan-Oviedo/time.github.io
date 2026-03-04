@@ -91,7 +91,12 @@
                 <button data-type="WASTE" class="opt-btn waste">📱 Redes Sociales</button>
                 <button data-type="WASTE" class="opt-btn waste">🎮 Procrastinación</button>
             </div>
-            <button id="close-modal" class="text-btn">Cancelar</button>
+            
+            <hr style="border-color: #3c2a4d; margin: 20px 0 15px 0;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="discard-session-btn" class="text-btn hidden" style="color: var(--accent-red); font-weight: bold;">🛑 Descartar temporizador</button>
+                <button id="close-modal" class="text-btn">Cancelar</button>
+            </div>
         </div>
     </div>
 
@@ -227,6 +232,6 @@
         ⚠️ El espacio ya está ocupado
     </div>
 
-    <script type="module" src="js/app.js?v=ui-spacing"></script>
+    <script type="module" src="js/app.js?v=no-alerts"></script>
 </body>
 </html>

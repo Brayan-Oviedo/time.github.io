@@ -1,5 +1,5 @@
-import { LocalDB } from './store/localDb.js?v=rutina-final2';
-import { TimeStack } from './components/TimeStack.js?v=fisica-final';
+import { LocalDB } from './store/localDb.js?v=cancel-timer';
+import { TimeStack } from './components/TimeStack.js?v=cancel-timer';
 import { TimeUtils } from './utils/timeUtils.js';
 
 const auditModal = document.getElementById('audit-modal');
@@ -286,13 +286,42 @@ function setupInteractions(stack) {
         if (LocalDB.load().currentSession) {
             tempGapStart = null; 
             document.getElementById('modal-subtitle').innerText = "¿Qué actividad realizaste?";
-            auditModal.classList.remove('hidden'); durationControl.classList.add('hidden');
+            auditModal.classList.remove('hidden'); 
+            durationControl.classList.add('hidden');
+            
+            const discardBtn = document.getElementById('discard-session-btn');
+            if(discardBtn) discardBtn.classList.remove('hidden');
+            document.getElementById('close-modal').innerText = "Ocultar y seguir contando";
+
         } else {
             const now = Date.now(); LocalDB.startSession(now); activateTimerUI(now);
         }
     });
     
     document.getElementById('close-modal').addEventListener('click', () => auditModal.classList.add('hidden'));
+    
+    // --- MAGIA SIN ALERTS: BOTÓN DESCARTAR CON DOBLE TOQUE ---
+    const discardBtn = document.getElementById('discard-session-btn');
+    if (discardBtn) {
+        discardBtn.addEventListener('click', () => {
+            if (discardBtn.dataset.ready === 'true') {
+                LocalDB.stopSession(); 
+                resetTimerUI();
+                auditModal.classList.add('hidden');
+                
+                discardBtn.dataset.ready = 'false';
+                discardBtn.innerText = '🛑 Descartar temporizador';
+            } else {
+                discardBtn.dataset.ready = 'true';
+                discardBtn.innerText = '⚠️ ¿Seguro? Toca de nuevo para descartar';
+                setTimeout(() => {
+                    discardBtn.dataset.ready = 'false';
+                    discardBtn.innerText = '🛑 Descartar temporizador';
+                }, 3000);
+            }
+        });
+    }
+
     document.getElementById('close-judge').addEventListener('click', () => {
         judgeModal.classList.add('hidden');
         tempJudgeBlockId = null; 
@@ -513,6 +542,10 @@ function setupInteractions(stack) {
                 ? `Agendando "${schedulingItem.text}" desde las ${timeString}` 
                 : `Ajusta la duración desde las ${timeString}:`;
                 
+            const discardBtn = document.getElementById('discard-session-btn');
+            if(discardBtn) discardBtn.classList.add('hidden');
+            document.getElementById('close-modal').innerText = "Cancelar";
+
             durationControl.classList.remove('hidden');
             auditModal.classList.remove('hidden');
         }
