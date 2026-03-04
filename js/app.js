@@ -49,7 +49,6 @@ function refreshView(stack) {
     
     let filteredBlocks = (state.blocks || []).filter(block => block.dateKey === viewDateKey);
     
-    // BLOQUEO AL PASADO: Solo inyecta rutinas si el día actual es HOY o en el FUTURO.
     if (viewDateKey >= todayKey && filteredBlocks.length === 0 && state.routines && state.routines.length > 0) {
         if (LocalDB.applyRoutines(viewDateKey)) {
             const newState = LocalDB.load();
@@ -197,14 +196,32 @@ function setupInteractions(stack) {
     });
     document.getElementById('close-review').addEventListener('click', () => reviewModal.classList.add('hidden'));
     
-    document.getElementById('plan-next-week-btn').addEventListener('click', () => {
-        if(confirm('¿Estás seguro? Esto borrará tus bloques de tiempo para empezar una nueva semana de cero. Tus reglas y rutinas se mantendrán.')) {
+    // DOBLE TOQUE: LIMPIAR SEMANA Y REGLAS (PWA SAFE)
+    const resetBtn = document.getElementById('plan-next-week-btn');
+    resetBtn.addEventListener('click', () => {
+        if (resetBtn.dataset.ready === 'true') {
             const state = LocalDB.load();
             state.blocks = []; 
+            
+            // MAGIA: Borra también las reglas pasadas
+            state.rules = []; 
+            
             LocalDB.save(state);
             refreshView(stack);
             reviewModal.classList.add('hidden');
-            alert('Semana reseteada. Es hora de agendar tus Rocas Grandes en el calendario.');
+            
+            resetBtn.dataset.ready = 'false';
+            resetBtn.innerText = 'Limpiar Semana y Planificar';
+            resetBtn.style.background = 'var(--accent-purple)';
+        } else {
+            resetBtn.dataset.ready = 'true';
+            resetBtn.innerText = '⚠️ Toca de nuevo para confirmar';
+            resetBtn.style.background = 'var(--accent-red)';
+            setTimeout(() => {
+                resetBtn.dataset.ready = 'false';
+                resetBtn.innerText = 'Limpiar Semana y Planificar';
+                resetBtn.style.background = 'var(--accent-purple)';
+            }, 3000);
         }
     });
 
@@ -258,7 +275,7 @@ function setupInteractions(stack) {
     document.addEventListener('touchmove', handleDragMove, {passive: false});
 
     document.addEventListener('mouseup', (e) => handleDragEnd(e, stack));
-    document.addEventListener('touchend', (e) => handleDragEnd(e, stack));
+    document.addEventListener('touchmove', (e) => handleDragEnd(e, stack));
 
     function handleDragStart(e) {
         const block = e.target.closest('.time-block');
@@ -333,6 +350,10 @@ function setupInteractions(stack) {
                         if(removeRoutineBtn) removeRoutineBtn.style.display = 'none';
                     }
 
+                    const delBtn = document.getElementById('judge-remove-error');
+                    delBtn.dataset.ready = 'false';
+                    delBtn.innerText = 'Borrar (Me equivoqué al anotar)';
+
                     judgeModal.classList.remove('hidden');
                 }
             }
@@ -380,7 +401,7 @@ function setupInteractions(stack) {
         }
     });
 
-    // --- ACCIONES DEL JUEZ ---
+    // --- ACCIONES DEL JUEZ SIN ALERTS ---
     document.querySelectorAll('.judge-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (tempJudgeBlockId) {
@@ -393,22 +414,16 @@ function setupInteractions(stack) {
                         LocalDB.addRoutine(block);
                         LocalDB.updateBlockDecision(tempJudgeBlockId, 'routine');
                         LocalDB.addSystemRule(block.label, 'routine');
-                        alert(`✅ "${block.label}" es ahora una Roca Grande. Se agendará automáticamente en el futuro.`);
                     } else if (e.currentTarget.id === 'remove-routine-btn') {
-                        
-                        // MAGIA: Borra la rutina del futuro y devuelve el bloque a ⚠️
                         LocalDB.removeRoutine(block);
                         LocalDB.removeSystemRule(block.label);
                         LocalDB.updateBlockDecision(tempJudgeBlockId, null); 
-                        
-                        alert(`🛑 Rutina eliminada para el futuro. El bloque actual vuelve a estar sin juzgar.`);
                     } else {
                         if (decision === 'delete' || decision === 'delegate' || decision === 'automate') {
                             LocalDB.removeRoutine(block); 
                         }
                         LocalDB.updateBlockDecision(tempJudgeBlockId, decision);
                         LocalDB.addSystemRule(block.label, decision);
-                        alert('Regla guardada para tu Revisión Semanal.');
                     }
                 }
                 
@@ -419,18 +434,28 @@ function setupInteractions(stack) {
         });
     });
 
-    document.getElementById('judge-remove-error').addEventListener('click', () => {
-        if (confirm('¿Borrar registro permanentemente?')) {
+    const delBtn = document.getElementById('judge-remove-error');
+    delBtn.addEventListener('click', () => {
+        if (delBtn.dataset.ready === 'true') {
             const state = LocalDB.load();
             const block = state.blocks.find(b => b.id === tempJudgeBlockId);
-            if (block) {
-                LocalDB.removeRoutine(block); 
-            }
+            if (block) { LocalDB.removeRoutine(block); }
+            
             state.blocks = state.blocks.filter(b => b.id !== tempJudgeBlockId);
             LocalDB.save(state);
             refreshView(stack); 
             judgeModal.classList.add('hidden');
             tempJudgeBlockId = null;
+            
+            delBtn.dataset.ready = 'false';
+            delBtn.innerText = 'Borrar (Me equivoqué al anotar)';
+        } else {
+            delBtn.dataset.ready = 'true';
+            delBtn.innerText = '⚠️ ¿Seguro? Toca de nuevo';
+            setTimeout(() => {
+                delBtn.dataset.ready = 'false';
+                delBtn.innerText = 'Borrar (Me equivoqué al anotar)';
+            }, 3000);
         }
     });
 }
