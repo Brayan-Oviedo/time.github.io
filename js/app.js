@@ -274,52 +274,6 @@ function processBlockSave(type, label, stackComponent) {
     auditModal.classList.add('hidden');
 }
 
-// === DOS RUTAS CLARAS PARA ABRIR LA AUDITORÍA ===
-
-// Ruta 1: Cuando tocas el Cronómetro (Timer en Vivo)
-function openAuditForTimer() {
-    tempGapStart = null; 
-    document.getElementById('modal-subtitle').innerText = "¿Qué actividad realizaste?";
-    document.getElementById('duration-control').classList.add('hidden');
-    
-    // MUESTRA el botón de descartar
-    const discardBtn = document.getElementById('discard-session-btn');
-    if(discardBtn) {
-        discardBtn.classList.remove('hidden');
-        // Resetea su estado de doble toque por si acaso
-        discardBtn.dataset.ready = 'false';
-        discardBtn.innerText = '🛑 Descartar temporizador';
-    }
-    
-    document.getElementById('close-modal').innerText = "Ocultar y seguir contando";
-    auditModal.classList.remove('hidden'); 
-}
-
-// Ruta 2: Cuando tocas el Calendario (Hueco a mano)
-function openAuditForGap(timeString, duration, maxAvailable) {
-    document.getElementById('modal-subtitle').innerText = schedulingItem 
-        ? `Agendando "${schedulingItem.text}" desde las ${timeString}` 
-        : `Ajusta la duración desde las ${timeString}:`;
-        
-    durationSlider.max = maxAvailable.toString(); 
-    durationSlider.value = duration.toString();
-    durationValue.innerText = `${duration} min`;
-    document.getElementById('duration-control').classList.remove('hidden');
-    
-    // OCULTA el botón de descartar para siempre en este modo
-    const discardBtn = document.getElementById('discard-session-btn');
-    if(discardBtn) {
-        discardBtn.classList.add('hidden');
-        // Resetea su estado interno para evitar fantasmas
-        discardBtn.dataset.ready = 'false';
-        discardBtn.innerText = '🛑 Descartar temporizador';
-    }
-    
-    document.getElementById('close-modal').innerText = "Cancelar";
-    auditModal.classList.remove('hidden');
-}
-
-
 function setupInteractions(stack) {
     document.getElementById('prev-day').addEventListener('click', () => { currentViewDate.setDate(currentViewDate.getDate() - 1); updateDateUI(); refreshView(stack); });
     document.getElementById('next-day').addEventListener('click', () => { currentViewDate.setDate(currentViewDate.getDate() + 1); updateDateUI(); refreshView(stack); });
@@ -434,9 +388,24 @@ function setupInteractions(stack) {
         }
     });
 
+    // === LÓGICA DE APERTURA DESDE EL BOTÓN "+" (TEMPORIZADOR EN VIVO) ===
     fab.addEventListener('click', () => {
         if (LocalDB.load().currentSession) {
-            openAuditForTimer();
+            tempGapStart = null; 
+            document.getElementById('modal-subtitle').innerText = "¿Qué actividad realizaste?";
+            document.getElementById('duration-control').classList.add('hidden');
+            
+            // FORZAR VISIBILIDAD DEL BOTÓN DESCARTAR CON JAVASCRIPT PURO
+            const discardBtn = document.getElementById('discard-session-btn');
+            if(discardBtn) {
+                discardBtn.style.display = 'block'; 
+                discardBtn.dataset.ready = 'false';
+                discardBtn.innerText = '🛑 Descartar temporizador';
+            }
+            
+            document.getElementById('close-modal').innerText = "Ocultar y seguir contando";
+            auditModal.classList.remove('hidden'); 
+
         } else {
             const now = Date.now(); LocalDB.startSession(now); activateTimerUI(now);
         }
@@ -660,6 +629,7 @@ function setupInteractions(stack) {
         drag = { el: null, id: null, startY: 0, originalStart: 0, isDragging: false };
     }
 
+    // === LÓGICA DE APERTURA DESDE EL CALENDARIO (HUECOS MANUALES) ===
     stackContainer.addEventListener('click', (e) => {
         const gapElement = e.target.closest('.time-gap');
         if (gapElement && !drag.isDragging) {
@@ -674,10 +644,28 @@ function setupInteractions(stack) {
             if (duration === 1440) duration = 60; 
             if (duration < 1) duration = 1;
             
+            durationSlider.max = maxAvailable.toString(); 
+            durationSlider.value = duration.toString();
+            durationValue.innerText = `${duration} min`;
+            
             const timeString = TimeUtils.minutesToTime(tempGapStart);
             
-            // LA CLAVE: Llamamos a la función que esconde explícitamente el botón
-            openAuditForGap(timeString, duration, maxAvailable);
+            document.getElementById('modal-subtitle').innerText = schedulingItem 
+                ? `Agendando "${schedulingItem.text}" desde las ${timeString}` 
+                : `Ajusta la duración desde las ${timeString}:`;
+                
+            document.getElementById('duration-control').classList.remove('hidden');
+
+            // FORZAR OCULTAR BOTÓN DESCARTAR CON JAVASCRIPT PURO
+            const discardBtn = document.getElementById('discard-session-btn');
+            if(discardBtn) {
+                discardBtn.style.display = 'none'; 
+                discardBtn.dataset.ready = 'false';
+                discardBtn.innerText = '🛑 Descartar temporizador';
+            }
+            
+            document.getElementById('close-modal').innerText = "Cancelar";
+            auditModal.classList.remove('hidden');
         }
     });
 
