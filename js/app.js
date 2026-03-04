@@ -1,5 +1,5 @@
-import { LocalDB } from './store/localDb.js?v=cancel-timer';
-import { TimeStack } from './components/TimeStack.js?v=cancel-timer';
+import { LocalDB } from './store/localDb.js?v=custom-acts';
+import { TimeStack } from './components/TimeStack.js?v=fisica-final';
 import { TimeUtils } from './utils/timeUtils.js';
 
 const auditModal = document.getElementById('audit-modal');
@@ -7,6 +7,7 @@ const judgeModal = document.getElementById('judge-modal');
 const inboxModal = document.getElementById('inbox-modal');
 const reviewModal = document.getElementById('review-modal');
 const vaultModal = document.getElementById('vault-modal'); 
+const configModal = document.getElementById('config-modal'); // NUEVO MODAL DE CONFIGURACIÓN
 
 const fab = document.getElementById('ghost-trigger');
 const stackContainer = document.getElementById('time-stack-container'); 
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const appState = LocalDB.load();
     const stack = new TimeStack('time-stack-container');
     
+    renderAuditActivities(); // INYECTAR TUS ACTIVIDADES AL ABRIR LA APP
     updateDateUI();
     refreshView(stack);
     renderInbox();
@@ -44,6 +46,51 @@ document.addEventListener('DOMContentLoaded', () => {
     updateRemainingTime();
     setupInteractions(stack);
 });
+
+// FUNCIÓN PARA RENDERIZAR BOTONES DE AUDITORÍA
+function renderAuditActivities() {
+    const state = LocalDB.load();
+    const investGrid = document.getElementById('audit-invest-grid');
+    const wasteGrid = document.getElementById('audit-waste-grid');
+    
+    investGrid.innerHTML = '';
+    wasteGrid.innerHTML = '';
+    
+    state.activities.forEach(act => {
+        const btn = document.createElement('button');
+        btn.className = act.type === 'WASTE' ? 'opt-btn waste' : 'opt-btn invest';
+        btn.dataset.type = act.type;
+        btn.innerText = act.label;
+        
+        if (act.type === 'WASTE') wasteGrid.appendChild(btn);
+        else investGrid.appendChild(btn);
+    });
+}
+
+// FUNCIÓN PARA RENDERIZAR EL PANEL DE CONFIGURACIÓN
+function renderConfigModal() {
+    const state = LocalDB.load();
+    const investList = document.getElementById('config-invest-list');
+    const wasteList = document.getElementById('config-waste-list');
+    
+    investList.innerHTML = '';
+    wasteList.innerHTML = '';
+    
+    state.activities.forEach(act => {
+        const li = document.createElement('li');
+        li.className = 'inbox-item';
+        li.innerHTML = `
+            <span style="font-weight: bold;">${act.label}</span>
+            <div style="display:flex; gap: 15px; align-items: center;">
+                <button class="edit-act-btn" data-id="${act.id}" style="background:none; border:none; font-size:1.1rem; padding: 0; color: white;">✏️</button>
+                <button class="delete-act-btn" data-id="${act.id}" style="background:none; border:none; font-size:1.1rem; padding: 0; color: white;">🗑️</button>
+            </div>
+        `;
+        
+        if (act.type === 'WASTE') wasteList.appendChild(li);
+        else investList.appendChild(li);
+    });
+}
 
 function refreshView(stack) {
     const state = LocalDB.load();
@@ -254,6 +301,71 @@ function setupInteractions(stack) {
     });
     document.getElementById('close-vault').addEventListener('click', () => vaultModal.classList.add('hidden'));
 
+    // --- MAGIA: GESTIÓN DE CONFIGURACIÓN ---
+    document.getElementById('open-config-btn').addEventListener('click', () => {
+        renderConfigModal();
+        configModal.classList.remove('hidden');
+        auditModal.classList.add('hidden');
+    });
+
+    document.getElementById('close-config-btn').addEventListener('click', () => {
+        configModal.classList.add('hidden');
+        renderAuditActivities(); // Recarga los botones nuevos en el panel
+        auditModal.classList.remove('hidden');
+    });
+
+    document.getElementById('add-invest-btn').addEventListener('click', () => {
+        const val = document.getElementById('new-invest-input').value;
+        if(val.trim()) { LocalDB.addActivity('INVEST', val); document.getElementById('new-invest-input').value = ''; renderConfigModal(); }
+    });
+
+    document.getElementById('add-waste-btn').addEventListener('click', () => {
+        const val = document.getElementById('new-waste-input').value;
+        if(val.trim()) { LocalDB.addActivity('WASTE', val); document.getElementById('new-waste-input').value = ''; renderConfigModal(); }
+    });
+
+    // EDITAR O BORRAR EN VIVO (SIN ALERTS)
+    document.querySelectorAll('#config-invest-list, #config-waste-list').forEach(list => {
+        list.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-act-btn');
+            const saveBtn = e.target.closest('.save-act-btn');
+            const delBtn = e.target.closest('.delete-act-btn');
+            
+            if (editBtn) {
+                const id = Number(editBtn.dataset.id);
+                const li = editBtn.closest('li');
+                const currentText = li.querySelector('span').innerText;
+                // Edición inline para no sacar de la app
+                li.innerHTML = `
+                    <input type="text" class="inline-edit-input" value="${currentText}" style="width: 70%; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--accent-purple); border-radius: 5px; padding: 8px; outline: none;">
+                    <button class="save-act-btn" data-id="${id}" style="background:none; border:none; font-size:1.2rem; padding: 0;">✅</button>
+                `;
+            } else if (saveBtn) {
+                const id = Number(saveBtn.dataset.id);
+                const input = saveBtn.closest('li').querySelector('input');
+                if (input && input.value.trim() !== '') {
+                    LocalDB.editActivity(id, input.value);
+                    renderConfigModal();
+                }
+            } else if (delBtn) {
+                // Borrado con doble toque para evitar accidentes sin usar alerts nativos
+                if (delBtn.dataset.ready === 'true') {
+                    LocalDB.removeActivity(Number(delBtn.dataset.id));
+                    renderConfigModal();
+                } else {
+                    delBtn.dataset.ready = 'true';
+                    delBtn.innerText = '⚠️';
+                    setTimeout(() => {
+                        if(document.body.contains(delBtn)) {
+                            delBtn.dataset.ready = 'false';
+                            delBtn.innerText = '🗑️';
+                        }
+                    }, 3000);
+                }
+            }
+        });
+    });
+
     const resetBtn = document.getElementById('plan-next-week-btn');
     resetBtn.addEventListener('click', () => {
         if (resetBtn.dataset.ready === 'true') {
@@ -300,7 +412,6 @@ function setupInteractions(stack) {
     
     document.getElementById('close-modal').addEventListener('click', () => auditModal.classList.add('hidden'));
     
-    // --- MAGIA SIN ALERTS: BOTÓN DESCARTAR CON DOBLE TOQUE ---
     const discardBtn = document.getElementById('discard-session-btn');
     if (discardBtn) {
         discardBtn.addEventListener('click', () => {
@@ -308,7 +419,6 @@ function setupInteractions(stack) {
                 LocalDB.stopSession(); 
                 resetTimerUI();
                 auditModal.classList.add('hidden');
-                
                 discardBtn.dataset.ready = 'false';
                 discardBtn.innerText = '🛑 Descartar temporizador';
             } else {
@@ -329,7 +439,8 @@ function setupInteractions(stack) {
 
     document.querySelector('#audit-modal .modal-content').addEventListener('click', (e) => {
         const btn = e.target.closest('.opt-btn');
-        if (btn && btn.id !== 'plan-next-week-btn') {
+        // SEGURO: Solo reacciona si el botón tiene un data-type (es una actividad inyectada)
+        if (btn && btn.dataset.type) {
             const type = btn.dataset.type;
             const label = schedulingItem ? schedulingItem.text : btn.innerText.trim();
             

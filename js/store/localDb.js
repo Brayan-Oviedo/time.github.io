@@ -2,6 +2,14 @@ const DB_KEY = '1440_OS_DATA';
 
 const defaultState = {
     settings: { wakeUp: "06:00" },
+    activities: [
+        { id: 1, type: 'INVEST', label: '🧠 Trabajo Profundo' },
+        { id: 2, type: 'INVEST', label: '🤝 Negocios / $' },
+        { id: 3, type: 'INVEST', label: '📚 Estudio' },
+        { id: 4, type: 'INVEST', label: '🏋️ Salud / Vida' },
+        { id: 5, type: 'WASTE', label: '📱 Redes Sociales' },
+        { id: 6, type: 'WASTE', label: '🎮 Procrastinación' }
+    ],
     blocks: [],
     inbox: [], 
     rules: [],
@@ -19,6 +27,18 @@ export const LocalDB = {
             if (!parsed.inbox) parsed.inbox = [];
             if (!parsed.viewDate) parsed.viewDate = new Date().toDateString();
             if (!parsed.routines) parsed.routines = [];
+            
+            // MAGIA: Poblamos tu base de datos con las actividades por defecto si vienes de la versión antigua
+            if (!parsed.activities) {
+                parsed.activities = [
+                    { id: 1, type: 'INVEST', label: '🧠 Trabajo Profundo' },
+                    { id: 2, type: 'INVEST', label: '🤝 Negocios / $' },
+                    { id: 3, type: 'INVEST', label: '📚 Estudio' },
+                    { id: 4, type: 'INVEST', label: '🏋️ Salud / Vida' },
+                    { id: 5, type: 'WASTE', label: '📱 Redes Sociales' },
+                    { id: 6, type: 'WASTE', label: '🎮 Procrastinación' }
+                ];
+            }
             
             if (!parsed.rules) {
                 parsed.rules = [];
@@ -51,6 +71,26 @@ export const LocalDB = {
         if (block) { block.decision = decision; this.save(state); }
     },
     
+    // NUEVAS FUNCIONES: CONFIGURADOR DE ACTIVIDADES
+    addActivity(type, label) {
+        const state = this.load();
+        state.activities.push({ id: Date.now(), type: type, label: label.trim() });
+        this.save(state);
+    },
+    removeActivity(id) {
+        const state = this.load();
+        state.activities = state.activities.filter(a => a.id !== id);
+        this.save(state);
+    },
+    editActivity(id, newLabel) {
+        const state = this.load();
+        const act = state.activities.find(a => a.id === id);
+        if (act) {
+            act.label = newLabel.trim();
+            this.save(state);
+        }
+    },
+
     addSystemRule(activityLabel, decision) {
         const state = this.load();
         const labelLower = activityLabel.toLowerCase().trim();
@@ -70,7 +110,6 @@ export const LocalDB = {
         this.save(state);
     },
 
-    // NUEVO: Permite quitar una regla para que el bloque quede virgen
     removeSystemRule(activityLabel) {
         const state = this.load();
         if(!state.rules) return;
@@ -93,15 +132,10 @@ export const LocalDB = {
         }
     },
 
-    // CORREGIDO: Aniquila la rutina SOLO del futuro
     removeRoutine(block) {
         const state = this.load();
         if (!state.routines) return;
-        
-        // 1. La quitamos de la memoria permanente
         state.routines = state.routines.filter(r => !(r.label === block.label && r.start === block.start));
-
-        // 2. Destruimos los bloques generados SOLO si la fecha es MAYOR (mañana en adelante)
         state.blocks = state.blocks.filter(b => {
             const isMatch = (b.label === block.label && b.start === block.start && b.decision === 'routine');
             if (isMatch && b.dateKey > block.dateKey) {
@@ -109,7 +143,6 @@ export const LocalDB = {
             }
             return true; 
         });
-
         this.save(state);
     },
 
